@@ -1,21 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-import sys
-import argparse
-from math import log
-from tqdm import tqdm
-from copy import deepcopy
-import numpy as np
-import gzip
-import pickle
-import random
-from datetime import datetime
-import matplotlib.pyplot as plt
-import torch
-
 from utils import *
-from data_utils import AmazonDataset
 
 
 class KnowledgeGraph(object):
@@ -27,6 +12,7 @@ class KnowledgeGraph(object):
         self._load_knowledge(dataset)
         self._clean()
         self.top_matches = None
+        self.top_matches_for_product = None
 
     def _load_entities(self, dataset):
         print('Load entities...')
@@ -146,6 +132,17 @@ class KnowledgeGraph(object):
             tail_ids = top_match_set.intersection(tail_ids)
         return list(tail_ids)
 
+    def get_tails_given_product(self, entity_type, entity_id, relation, product_id):
+        tail_type = KG_RELATION[entity_type][relation]
+        tail_ids = self.G[entity_type][entity_id][relation]
+        if tail_type not in self.top_matches_for_product:
+            return tail_ids
+        top_match_set = set(self.top_matches_for_product[tail_type][product_id])
+        top_k = len(top_match_set)
+        if len(tail_ids) > top_k:
+            tail_ids = top_match_set.intersection(tail_ids)
+        return list(tail_ids)
+
     def trim_edges(self):
         degrees = {}
         for entity in self.G:
@@ -166,6 +163,13 @@ class KnowledgeGraph(object):
             USER: u_u_match,
             PRODUCT: u_p_match,
             WORD: u_w_match,
+        }
+
+    def set_top_matches_for_product(self, p_p_match, p_u_match, p_w_match):
+        self.top_matches = {
+            PRODUCT: p_p_match,
+            USER: p_u_match,
+            WORD: p_w_match,
         }
 
     def heuristic_search(self, uid, pid, pattern_id, trim_edges=False):
@@ -207,6 +211,45 @@ class KnowledgeGraph(object):
 
         return paths
 
+    # def heuristic_search_product(self, pid, uid, pattern_id, trim_edges=False):
+    #     if trim_edges and self.top_matches is None:
+    #         raise Exception('To enable edge-trimming, must set top_matches of users first!')
+    #     if trim_edges:
+    #         _get = lambda e, i, r: self.get_tails_given_product(e, i, r, pid)
+    #     else:
+    #         _get = lambda e, i, r: self.get_tails(e, i, r)
+    #
+    #     pattern = PATH_PATTERN[pattern_id]
+    #     paths = []
+    #     if pattern_id == 2:  # OK
+    #         wids_p = set(_get(PRODUCT, pid, DESCRIBED_AS))  # PRODUCT->DESCRIBE->WORD
+    #         wids_u = set(_get(USER, uid, MENTION))  # USER->MENTION->WORD
+    #         intersect_nodes = wids_u.intersection(wids_p)
+    #         paths = [(uid, x, pid) for x in intersect_nodes]
+    #     elif pattern_id in [21, 22, 23, 24, 25, 26, 27]:
+    #         pids_u = set(_get(USER, uid, PURCHASE))  # USER->PURCHASE->PRODUCT
+    #         pids_u = pids_u.difference([pid])  # exclude target product
+    #         nodes_p = set(_get(PRODUCT, pid, pattern[3][0]))  # PRODUCT->relation->node2
+    #         if pattern[2][1] == USER:
+    #             nodes_p.difference([uid])
+    #         for pid_u in pids_u:
+    #             relation, entity_tail = pattern[2][0], pattern[2][1]
+    #             et_ids = set(_get(PRODUCT, pid_u, relation))  # USER->PURCHASE->PRODUCT->relation->node2
+    #             intersect_nodes = et_ids.intersection(nodes_p)
+    #             tmp_paths = [(uid, pid_u, x, pid) for x in intersect_nodes]
+    #             paths.extend(tmp_paths)
+    #     elif pattern_id == 28:
+    #         wids_u = set(_get(USER, uid, MENTION))  # USER->MENTION->WORD
+    #         uids_p = set(_get(PRODUCT, pid, PURCHASE))  # PRODUCT->PURCHASE->USER
+    #         uids_p = uids_p.difference([uid])  # exclude source user
+    #         for uid_p in uids_p:
+    #             wids_u_p = set(_get(USER, uid_p, MENTION))  # PRODUCT->PURCHASE->USER->MENTION->WORD
+    #             intersect_nodes = wids_u.intersection(wids_u_p)
+    #             tmp_paths = [(uid, x, uid_p, pid) for x in intersect_nodes]
+    #             paths.extend(tmp_paths)
+    #
+    #     return paths
+
 
 def check_test_path(dataset_str, kg):
     # Check if there exists at least one path for any user-product in test set.
@@ -220,3 +263,15 @@ def check_test_path(dataset_str, kg):
             if count == 0:
                 print(uid, pid)
 
+
+# def check_test_path_product(dataset_str, kg):
+#     # Check if there exists at least one path for any product-user in test set.
+#     test_product_users = load_labels(dataset_str, 'test')
+#     for pid in test_product_users:
+#         for uid in test_product_users[pid]:
+#             count = 0
+#             for pattern_id in [2, 21, 22, 23, 24, 25, 26, 27, 28]:
+#                 tmp_path = kg.heuristic_search_product(pid, uid, pattern_id)
+#                 count += len(tmp_path)
+#             if count == 0:
+#                 print(pid, uid)

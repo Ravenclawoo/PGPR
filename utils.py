@@ -1,15 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
-import sys
-import random
-import pickle
 import logging
 import logging.handlers
+import pickle
+import random
+import sys
+
 import numpy as np
 import scipy.sparse as sp
-from sklearn.feature_extraction.text import TfidfTransformer
 import torch
-
+from collections import defaultdict
+from sklearn.feature_extraction.text import TfidfTransformer
 
 # Dataset names.
 BEAUTY = 'beauty'
@@ -96,8 +97,15 @@ KG_RELATION = {
 
 PATH_PATTERN = {
     # length = 3
+    #############
+    # Paths starting with the User
     1: ((None, USER), (MENTION, WORD), (DESCRIBED_AS, PRODUCT)),
+    # Paths starting with the Product
+    2: ((None, PRODUCT), (DESCRIBED_AS, WORD), (MENTION, USER)),
+
     # length = 4
+    #############
+    # Paths starting with the User
     11: ((None, USER), (PURCHASE, PRODUCT), (PURCHASE, USER), (PURCHASE, PRODUCT)),
     12: ((None, USER), (PURCHASE, PRODUCT), (DESCRIBED_AS, WORD), (DESCRIBED_AS, PRODUCT)),
     13: ((None, USER), (PURCHASE, PRODUCT), (PRODUCED_BY, BRAND), (PRODUCED_BY, PRODUCT)),
@@ -106,6 +114,15 @@ PATH_PATTERN = {
     16: ((None, USER), (PURCHASE, PRODUCT), (ALSO_VIEWED, RPRODUCT), (ALSO_VIEWED, PRODUCT)),
     17: ((None, USER), (PURCHASE, PRODUCT), (BOUGHT_TOGETHER, RPRODUCT), (BOUGHT_TOGETHER, PRODUCT)),
     18: ((None, USER), (MENTION, WORD), (MENTION, USER), (PURCHASE, PRODUCT)),
+    # Paths starting with the Product
+    21: ((None, PRODUCT), (PURCHASE, USER), (PURCHASE, PRODUCT), (PURCHASE, USER)),
+    22: ((None, PRODUCT), (DESCRIBED_AS, WORD), (DESCRIBED_AS, PRODUCT), (PURCHASE, USER)),
+    23: ((None, PRODUCT), (PRODUCED_BY, BRAND), (PRODUCED_BY, PRODUCT), (PURCHASE, USER)),
+    24: ((None, PRODUCT), (BELONG_TO, CATEGORY), (BELONG_TO, PRODUCT), (PURCHASE, USER)),
+    25: ((None, PRODUCT), (ALSO_BOUGHT, RPRODUCT), (ALSO_BOUGHT, PRODUCT), (PURCHASE, USER)),
+    26: ((None, PRODUCT), (ALSO_VIEWED, RPRODUCT), (ALSO_VIEWED, PRODUCT), (PURCHASE, USER)),
+    27: ((None, PRODUCT), (BOUGHT_TOGETHER, RPRODUCT), (BOUGHT_TOGETHER, PRODUCT), (PURCHASE, USER)),
+    28: ((None, PRODUCT), (PURCHASE, USER), (MENTION, WORD), (MENTION, USER)),
 }
 
 
@@ -227,3 +244,15 @@ def load_kg(dataset):
     kg = pickle.load(open(kg_file, 'rb'))
     return kg
 
+
+def invert_labels(labels):
+    """
+    Inverts a mapping of user:[products] to product:[users] and vice versa
+    :param labels: dictionary of user:[products] (or vice versa)
+    :return: inverted dictionary of product:[users] (or vice versa)
+    """
+    inv_labels = defaultdict(set)
+    for k, vs in labels.items():
+        for v in vs:
+            inv_labels[v].add(k)
+    return inv_labels

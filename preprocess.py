@@ -1,13 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-import pickle
-import gzip
 import argparse
+import gzip
+import os
 
-from utils import *
 from data_utils import AmazonDataset
 from knowledge_graph import KnowledgeGraph
+from utils import *
 
 
 def generate_labels(dataset, mode='train'):

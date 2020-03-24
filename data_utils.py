@@ -1,11 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-import numpy as np
 import gzip
-import pickle
-from easydict import EasyDict as edict
 import random
+
+import numpy as np
+from easydict import EasyDict as edict
 
 
 class AmazonDataset(object):

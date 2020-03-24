@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
 
-from kg_env import BatchKGEnvironment
+from kg_env_product import BatchKGProductEnvironment
 from utils import *
 
 logger = None
@@ -17,9 +17,9 @@ logger = None
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
 
-class ActorCritic(nn.Module):
+class ActorCriticProduct(nn.Module):
     def __init__(self, state_dim, act_dim, gamma=0.99, hidden_sizes=[512, 256]):
-        super(ActorCritic, self).__init__()
+        super(ActorCriticProduct, self).__init__()
         self.state_dim = state_dim
         self.act_dim = act_dim
         self.gamma = gamma
@@ -98,15 +98,15 @@ class ActorCritic(nn.Module):
         return loss.item(), actor_loss.item(), critic_loss.item(), entropy_loss.item()
 
 
-class ACDataLoader(object):
-    def __init__(self, uids, batch_size):
-        self.uids = np.array(uids)
-        self.num_users = len(uids)
+class ACDataLoaderProduct(object):
+    def __init__(self, pids, batch_size):
+        self.pids = np.array(pids)
+        self.num_products = len(pids)
         self.batch_size = batch_size
         self.reset()
 
     def reset(self):
-        self._rand_perm = np.random.permutation(self.num_users)
+        self._rand_perm = np.random.permutation(self.num_products)
         self._start_idx = 0
         self._has_next = True
 
@@ -116,20 +116,20 @@ class ACDataLoader(object):
     def get_batch(self):
         if not self._has_next:
             return None
-        # Multiple users per batch
-        end_idx = min(self._start_idx + self.batch_size, self.num_users)
+        # Multiple products per batch
+        end_idx = min(self._start_idx + self.batch_size, self.num_products)
         batch_idx = self._rand_perm[self._start_idx:end_idx]
-        batch_uids = self.uids[batch_idx]
-        self._has_next = self._has_next and end_idx < self.num_users
+        batch_pids = self.pids[batch_idx]
+        self._has_next = self._has_next and end_idx < self.num_products
         self._start_idx = end_idx
-        return batch_uids.tolist()
+        return batch_pids.tolist()
 
 
 def train(args):
-    env = BatchKGEnvironment(args.dataset, args.max_acts, max_path_len=args.max_path_len, state_history=args.state_history)
-    uids = list(env.kg(USER).keys())
-    dataloader = ACDataLoader(uids, args.batch_size)
-    model = ActorCritic(env.state_dim, env.act_dim, gamma=args.gamma, hidden_sizes=args.hidden).to(args.device)
+    env = BatchKGProductEnvironment(args.dataset, args.max_acts, max_path_len=args.max_path_len, state_history=args.state_history)
+    pids = list(env.kg(PRODUCT).keys())
+    dataloader = ACDataLoaderProduct(pids, args.batch_size)
+    model = ActorCriticProduct(env.state_dim, env.act_dim, gamma=args.gamma, hidden_sizes=args.hidden).to(args.device)
     logger.info('Parameters:' + str([i[0] for i in model.named_parameters()]))
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
@@ -140,9 +140,9 @@ def train(args):
         ### Start epoch ###
         dataloader.reset()
         while dataloader.has_next():
-            batch_uids = dataloader.get_batch()
+            batch_pids = dataloader.get_batch()
             ### Start batch episodes ###
-            batch_state = env.reset(batch_uids)  # numpy array of [bs, state_dim]
+            batch_state = env.reset(batch_pids)  # numpy array of [bs, state_dim]
             done = False
             while not done:
                 batch_act_mask = env.batch_action_mask(dropout=args.act_dropout)  # numpy array of size [bs, act_dim]
@@ -151,7 +151,7 @@ def train(args):
                 model.rewards.append(batch_reward)
             ### End of episodes ###
 
-            lr = args.lr * max(1e-4, 1.0 - float(step) / (args.epochs * len(uids) / args.batch_size))
+            lr = args.lr * max(1e-4, 1.0 - float(step) / (args.epochs * len(pids) / args.batch_size))
             for pg in optimizer.param_groups:
                 pg['lr'] = lr
 
@@ -189,7 +189,7 @@ def train(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default=BEAUTY, help='One of {clothing, cell, beauty, cd}')
-    parser.add_argument('--name', type=str, default='train_agent', help='directory name.')
+    parser.add_argument('--name', type=str, default='train_product_agent', help='directory name.')
     parser.add_argument('--seed', type=int, default=123, help='random seed.')
     parser.add_argument('--gpu', type=str, default='0', help='gpu device.')
     parser.add_argument('--epochs', type=int, default=50, help='Max number of epochs.')

@@ -110,13 +110,13 @@ class KnowledgeEmbedding(nn.Module):
 
         regularizations = []
 
-        # user + purchase -> product
-        up_loss, up_embeds = self.neg_loss('user', 'purchase', 'product', user_idxs, product_idxs)
+        # product + purchase -> user
+        up_loss, up_embeds = self.neg_loss('product', 'purchase', 'user', product_idxs, user_idxs)
         regularizations.extend(up_embeds)
         loss = up_loss
 
-        # user + mentions -> word
-        uw_loss, uw_embeds = self.neg_loss('user', 'mentions', 'word', user_idxs, word_idxs)
+        # word + mentions -> user
+        uw_loss, uw_embeds = self.neg_loss('word', 'mentions', 'user', word_idxs, user_idxs)
         regularizations.extend(uw_embeds)
         loss += uw_loss
 
@@ -200,6 +200,7 @@ def kg_neg_loss(entity_head_embed, entity_tail_embed, entity_head_idxs, entity_t
     Returns:
         A tensor of [1].
     """
+    batch_size = entity_head_idxs.size(0)
     entity_head_vec = entity_head_embed(entity_head_idxs)  # [batch_size, embed_size]
     example_vec = entity_head_vec + relation_vec  # [batch_size, embed_size]
     example_vec = example_vec.unsqueeze(2)  # [batch_size, embed_size, 1]

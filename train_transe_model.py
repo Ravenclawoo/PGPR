@@ -1,18 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-import sys
 import argparse
-import random
-import numpy as np
-import torch
-import torch.nn as nn
+import os
+
 import torch.optim as optim
 
-from utils import *
-from data_utils import AmazonDataset, AmazonDataLoader
+from data_utils import AmazonDataLoader
 from transe_model import KnowledgeEmbedding
-
+from utils import *
 
 logger = None
 
@@ -38,7 +33,7 @@ def train(args):
 
             # Get training batch.
             batch_idxs = dataloader.get_batch()
-            batch_idxs = torch.from_numpy(batch_idxs).to(args.device)
+            batch_idxs = torch.from_numpy(batch_idxs).to(torch.int64).to(args.device)
 
             # Train model.
             optimizer.zero_grad()
