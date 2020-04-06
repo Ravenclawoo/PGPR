@@ -14,14 +14,14 @@ from train_agent import ActorCritic
 from utils import *
 
 
-def evaluate(topk_matches, test_user_products, num_recommendations):
+def evaluate(topk_matches, test_user_products, num_recommendations, brand_dict):
     """Compute metrics for predicted recommendations.
     Args:
         topk_matches: a list or dict of product ids in ascending order.
     """
     invalid_users = []
     # Compute metrics
-    precisions, recalls, ndcgs, hits = [], [], [], []
+    precisions, recalls, ndcgs, hits, fairness = [], [], [], [], []
     test_user_idxs = list(test_user_products.keys())
     for uid in test_user_idxs:
         if uid not in topk_matches or len(topk_matches[uid]) < num_recommendations:
@@ -50,13 +50,15 @@ def evaluate(topk_matches, test_user_products, num_recommendations):
         recalls.append(recall)
         precisions.append(precision)
         hits.append(hit)
+        fairness.append(calculate_fairness(pred_list, brand_dict))
 
     avg_precision = np.mean(precisions) * 100
     avg_recall = np.mean(recalls) * 100
     avg_ndcg = np.mean(ndcgs) * 100
     avg_hit = np.mean(hits) * 100
-    print('NDCG={:.3f} |  Recall={:.3f} | HR={:.3f} | Precision={:.3f} | Invalid users={}'.format(
-            avg_ndcg, avg_recall, avg_hit, avg_precision, len(invalid_users)))
+    avg_fairness = np.mean(fairness)
+    print('NDCG={:.3f} |  Recall={:.3f} | HR={:.3f} | Precision={:.3f} | Fairness={:.3f} | Invalid users={}'.format(
+            avg_ndcg, avg_recall, avg_hit, avg_precision, avg_fairness, len(invalid_users)))
 
 
 def batch_beam_search(env, model, uids, device, topk=[25, 5, 1]):
@@ -206,7 +208,7 @@ def test(args):
         predict_paths(policy_file, path_file, args)
     if args.run_eval:
         pred_labels = evaluate_paths(path_file, train_labels, test_labels, args.num_recommendations, args)
-        evaluate(pred_labels, test_labels, args.num_recommendations)
+        evaluate(pred_labels, test_labels, args.num_recommendations, args.brand_dict)
 
 
 if __name__ == '__main__':
@@ -233,5 +235,7 @@ if __name__ == '__main__':
     args.device = torch.device('cuda:0') if torch.cuda.is_available() else 'cpu'
 
     args.log_dir = TMP_DIR[args.dataset] + '/' + args.name
+    pickle_in = open(BRAND_FILE[args.dataset], "rb")
+    args.brand_dict = pickle.load(pickle_in)
     test(args)
 

@@ -39,7 +39,8 @@ python train_agent.py --dataset <dataset_name>
 ```bash
 python test_agent.py --dataset <dataset_name> --run_path True --run_eval True
 ```
-If "run_path" is True, the program will generate paths for recommendation according to the trained policy. Note that for subsequent runs you should set this to 'False'
+If "run_path" is True, the program will generate paths for recommendation according to the trained policy. **Note that for subsequent runs you should set this to 'False'**
+
 If "run_eval" is True, the program will evaluate the recommendation performance based on the resulting paths.
 
 5. Train Product RL agent:

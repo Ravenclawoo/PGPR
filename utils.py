@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import logging.handlers
+import math
 import pickle
 import random
 import sys
@@ -42,6 +43,13 @@ LABELS = {
     CD: (TMP_DIR[CD] + '/train_label.pkl', TMP_DIR[CD] + '/test_label.pkl')
 }
 
+# Brand Popularity files.
+BRAND_FILE = {
+    BEAUTY: './brand_data/pid_fairness_beauty.pickle',
+    CELL: './brand_data/pid_fairness_cell.pickle',
+    CLOTH: './brand_data/pid_fairness_cloth.pickle',
+    CD: './brand_data/pid_fairness_cd.pickle',
+}
 
 # Entities
 USER = 'user'
@@ -256,3 +264,34 @@ def invert_labels(labels):
         for v in vs:
             inv_labels[v].add(k)
     return inv_labels
+
+
+def represents_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+
+def calculate_fairness(item_predictions, fairness_dict):
+    fairness_score = 0
+    num_items = 0
+    for pid in item_predictions:
+        if pid in fairness_dict:
+            if fairness_dict[pid] > 10:  # there are some corrupt values
+                continue
+            fairness_score += math.sqrt(fairness_dict[pid])
+            num_items += 1
+
+    if num_items == 0:
+        return 0
+
+    denominator = float(num_items - math.sqrt(num_items))
+
+    if denominator <= 0:
+        denominator = 1
+
+    fairness_score = float(fairness_score - math.sqrt(num_items)) / denominator
+
+    return fairness_score

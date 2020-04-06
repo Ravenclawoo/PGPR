@@ -46,7 +46,7 @@ def main():
     save_kg(args.dataset, kg)
     # =========== END =========== #
 
-    # Genereate train/test labels.
+    # Generate train/test labels.
     # ========== BEGIN ========== #
     print('Generate', args.dataset, 'train/test labels.')
     generate_labels(args.dataset, 'train')

@@ -11,7 +11,7 @@ from test_agent import evaluate_paths, predict_paths
 from utils import *
 
 
-def evaluate_multi(topk_user_matches, topk_product_matches, test_labels, num_recommendations, re_rank):
+def evaluate_multi(topk_user_matches, topk_product_matches, test_labels, num_recommendations, re_rank, brand_dict):
     """Compute metrics for predicted recommendations.
     Args:
         topk_matches: a list or dict of product ids in ascending order.
@@ -38,7 +38,7 @@ def evaluate_multi(topk_user_matches, topk_product_matches, test_labels, num_rec
 
     # Compute metrics
     invalid_users = []
-    precisions, recalls, ndcgs, hits = [], [], [], []
+    precisions, recalls, ndcgs, hits, fairness = [], [], [], [], []
     test_user_idxs = list(test_labels.keys())
     for uid in test_user_idxs:
         if uid not in topk_matches or len(topk_matches[uid]) < num_recommendations:
@@ -67,13 +67,15 @@ def evaluate_multi(topk_user_matches, topk_product_matches, test_labels, num_rec
         recalls.append(recall)
         precisions.append(precision)
         hits.append(hit)
+        fairness.append(calculate_fairness(pred_list, brand_dict))
 
     avg_precision = np.mean(precisions) * 100
     avg_recall = np.mean(recalls) * 100
     avg_ndcg = np.mean(ndcgs) * 100
     avg_hit = np.mean(hits) * 100
-    print('NDCG={:.3f} |  Recall={:.3f} | HR={:.3f} | Precision={:.3f} | Invalid users={}'.format(
-            avg_ndcg, avg_recall, avg_hit, avg_precision, len(invalid_users)))
+    avg_fairness = np.mean(fairness)
+    print('NDCG={:.3f} |  Recall={:.3f} | HR={:.3f} | Precision={:.3f} | Fairness={:.3f} | Invalid users={}'.format(
+            avg_ndcg, avg_recall, avg_hit, avg_precision, avg_fairness, len(invalid_users)))
 
 
 def test(args):
@@ -91,7 +93,7 @@ def test(args):
     if args.run_eval:
         pred_user_labels = evaluate_paths(user_path_file, train_labels, test_labels, args.num_recommendations * args.base_rec_multiplier, args)
         pred_product_labels = evaluate_product_paths(product_path_file, train_labels, test_labels, args.num_recommendations * args.base_rec_multiplier, args)
-        evaluate_multi(pred_user_labels, pred_product_labels, test_labels, args.num_recommendations, args.re_rank)
+        evaluate_multi(pred_user_labels, pred_product_labels, test_labels, args.num_recommendations, args.re_rank, args.brand_dict)
 
 
 if __name__ == '__main__':
@@ -132,5 +134,9 @@ if __name__ == '__main__':
     args.log_dir = TMP_DIR[args.dataset] + '/' + args.name
     args.log_dir_user = TMP_DIR[args.dataset] + '/' + args.name_user_agent
     args.log_dir_product = TMP_DIR[args.dataset] + '/' + args.name_product_agent
+
+    pickle_in = open(BRAND_FILE[args.dataset], "rb")
+    args.brand_dict = pickle.load(pickle_in)
+
     test(args)
 
