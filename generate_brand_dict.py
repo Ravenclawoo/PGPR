@@ -7,6 +7,12 @@ from utils import *
 
 
 def generate_brand_dict(file_name):
+    """
+    This code shows the process used to categorize the brands fairness segments. Note that it was run on the raw data
+    directly and won't work if you try to simply run it now
+    :param file_name:
+    :return: dictionary of { "ProductID": Fairness Score (1-10) }
+    """
     def load_data(file_name):
 
         count_i = 0
