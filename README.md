@@ -18,7 +18,7 @@ python test_multi_agent.py --dataset cell --run_path False --run_eval True --re_
 ```
 
 ## How to run the code from scratch
-1. Proprocess the data first:
+1. Pre-process the data:
 ```bash
 python preprocess.py --dataset <dataset_name>
 ```
