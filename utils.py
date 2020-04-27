@@ -47,7 +47,7 @@ LABELS = {
 BRAND_FILE = {
     BEAUTY: './brand_data/pid_fairness_beauty.pickle',
     CELL: './brand_data/pid_fairness_cell.pickle',
-    CLOTH: './brand_data/pid_fairness_cloth.pickle',
+    CLOTH: './brand_data/brand_cloth_2014.pickle',
     CD: './brand_data/pid_fairness_cd.pickle',
 }
 
