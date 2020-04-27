@@ -1,5 +1,4 @@
 # Reinforcement Knowledge Graph Reasoning for Explainable Recommendation
-This repository contains the source code of the SIGIR 2019 paper "[Reinforcement Knowledge Graph Reasoning for Explainable Recommendation](https://arxiv.org/abs/1906.05237)" [2].
 
 ## Datasets
 Two Amazon datasets (Amazon_Beauty, Amazon_Cellphones) are available in the "data/" directory and the split is consistent with [1].
@@ -19,7 +18,7 @@ python test_multi_agent.py --dataset cell --run_path False --run_eval True --re_
 ```
 
 ## How to run the code from scratch
-1. Proprocess the data first:
+1. Pre-process the data:
 ```bash
 python preprocess.py --dataset <dataset_name>
 ```
