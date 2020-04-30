@@ -1,4 +1,4 @@
-# Reinforcement Knowledge Graph Reasoning for Explainable Recommendation
+# Multi-Agent Reinforcement Knowledge Graph Reasoning for Explainable Recommendation
 
 ## Datasets
 Two Amazon datasets (Amazon_Beauty, Amazon_Cellphones) are available in the "data/" directory and the split is consistent with [1].
