@@ -60,7 +60,7 @@ def evaluate_multi(topk_user_matches, topk_product_matches, test_labels, num_rec
             idcg += 1. / (log(i + 2) / log(2))
         ndcg = dcg / idcg
         recall = hit_num / len(rel_set)
-        precision = hit_num / len(pred_list)
+        precision = hit_num / len(pred_list) * args.base_rec_multiplier
         hit = 1.0 if hit_num > 0.0 else 0.0
 
         ndcgs.append(ndcg)
@@ -91,8 +91,8 @@ def test(args):
         predict_paths(user_policy_file, user_path_file, args)
         predict_product_paths(product_policy_file, product_path_file, args)
     if args.run_eval:
-        pred_user_labels = evaluate_paths(user_path_file, train_labels, test_labels, args.num_recommendations, args)
-        pred_product_labels = evaluate_product_paths(product_path_file, train_labels, test_labels, args.num_recommendations * args.base_rec_multiplier, args)
+        pred_user_labels = evaluate_paths(user_path_file, train_labels, test_labels, args.num_recommendations * args.base_rec_multiplier, args)
+        pred_product_labels = evaluate_product_paths(product_path_file, train_labels, test_labels, args.num_recommendations , args)
         evaluate_multi(pred_user_labels, pred_product_labels, test_labels, args.num_recommendations, args.re_rank, args.brand_dict)
 
 
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     parser.add_argument('--run_eval', type=boolean, default=True, help='Run evaluation?')
     parser.add_argument('--num_recommendations', type=int, default=10, help='The number of recommendations that '
                                                                              'will be predicted for each product')
-    parser.add_argument('--base_rec_multiplier', type=int, default=10, help='Control how many more k '
+    parser.add_argument('--base_rec_multiplier', type=int, default=5, help='Control how many more k '
                                                                                   'user/products the base agents will '
                                                                                   'suggest')
     parser.add_argument('--re_rank', type=boolean, default=False, help='Attempt to fill in user recommendations to'
